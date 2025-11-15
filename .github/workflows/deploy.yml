@@ -1,0 +1,58 @@
+name: Deploy Ray-Cast Demo
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'raycast-hello/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+          target: wasm32-unknown-unknown
+
+      - name: Install wasm-pack
+        run: cargo install wasm-pack
+
+      - name: Build WASM module
+        working-directory: ./raycast-hello/wasm-raycast
+        run: wasm-pack build --target web
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: raycast-hello/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./raycast-hello
+        run: npm ci
+
+      - name: Build Next.js app
+        working-directory: ./raycast-hello
+        run: npm run build
+
+      - name: Deploy to Vercel
+        working-directory: ./raycast-hello
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          npm install -g vercel
+          vercel pull --yes --environment=production --token=$VERCEL_TOKEN
+          vercel build --prod --token=$VERCEL_TOKEN
+          vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN

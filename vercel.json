@@ -1,0 +1,5 @@
+{
+  "buildCommand": "curl -sSf https://sh.rustup.rs | sh -s -- -y && . $HOME/.cargo/env && cargo install wasm-pack && cd raycast-hello/wasm-raycast && wasm-pack build --target web && cd .. && npm install && npm run build",
+  "installCommand": "cd raycast-hello && npm install",
+  "outputDirectory": "raycast-hello/.next"
+}
